@@ -101,7 +101,6 @@ public class CircuitParser {
 		
 	}
 	
-	
 	public int getNumberOfInputs(){
 		return totalNumberOfInputs;
 	}

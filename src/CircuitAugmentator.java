@@ -13,56 +13,51 @@ public class CircuitAugmentator implements Runnable {
 	private File outputFile;
 	private Charset charset;
 	private CircuitParser circuitParser;
-	private final int augInputLength = 2;
 	private int numberOfNonXORGatesAdded;
-	private int numberOfNonOutputGatesAdded;
+	private int largestOutputGate;
+	private List<Gate> outputGates;
 
 	public CircuitAugmentator(File circuitFile, File outputFile){
 		this.outputFile = outputFile;
 		charset = Charset.defaultCharset();
 		circuitParser = new CircuitParser(circuitFile, charset);
+		outputGates = new ArrayList<Gate>();
 		numberOfNonXORGatesAdded = 0;
-		numberOfNonOutputGatesAdded = 0;
+		largestOutputGate = 0;
 	}
 
 	@Override
 	public void run() {
 		List<Gate> parsedGates = circuitParser.getParsedGates();
-		int numberOfGates = circuitParser.getNumberOfNonXORGates();
+		int numberOfInputs = circuitParser.getNumberOfInputs(); //256
 		List<Gate> augGates = 
-				getAugGates(circuitParser.getNumberOfInputs(), numberOfGates);
-		int numberOfAddedGates = augGates.size();
+				getAugGates(numberOfInputs);
 		
 		
-		for(Gate g: parsedGates){
-			if(!g.isXOR()){
-				g.setGateNumber(g.getGateNumber() + numberOfNonXORGatesAdded);
-			}
-			g.setLeftWireIndex(g.getLeftWireIndex() + numberOfAddedGates);
-			g.setRightWireIndex(g.getRightWireIndex() + numberOfAddedGates);
-			g.setOutputWireIndex(g.getOutputWireIndex() + numberOfAddedGates);
-		}
 		List<Gate> augCircuit = new ArrayList<Gate>();
-		augCircuit.addAll(parsedGates);
+		List<Gate> incrementedGates = getIncrementedGates(parsedGates, numberOfInputs);
 		augCircuit.addAll(augGates);
-
+		augCircuit.addAll(incrementedGates);
+		List<Gate> augOutputGates = getOutputGates();
+		augCircuit.addAll(augOutputGates);
+		
 		writeOutput(augCircuit);
 	}
 
-	private List<Gate> getAugGates(int numberOfStandardInputs, int numberOfGates) {
+	private List<Gate> getAugGates(int numberOfStandardInputs) {
 
 		List<Gate> res = new ArrayList<Gate>();
 		int t_a = circuitParser.getNumberOfAliceInputs();
-		int totalInputSize = numberOfStandardInputs * augInputLength;
+		int totalInputSize = numberOfStandardInputs * 2;
 		int gateNumber = 0;
 		int uptoAndIncludingFirstAugInput = totalInputSize - t_a;
 		List<Gate> andGates = new ArrayList<Gate>();
 
-		for(int s = uptoAndIncludingFirstAugInput; s < totalInputSize; s++){
 
-			/**
-			 * Add all the AND gates. We assume r is the 3rd input
-			 */
+		/**
+		 * Add all the AND gates. We assume r is the 3rd input
+		 */
+		for(int s = uptoAndIncludingFirstAugInput; s < totalInputSize; s++){
 			for(int i = 0; i < t_a; i++){
 				int shift = s - uptoAndIncludingFirstAugInput;
 				int leftWire = i;
@@ -75,22 +70,23 @@ public class CircuitAugmentator implements Runnable {
 
 				Gate g = new GateAugment("2 1 "+ leftWire + " " + rightWire +
 						" " + outputWire + " 0001");
-				g.setGateNumber(gateNumber++);
+				g.setGateNumber(gateNumber);
+				gateNumber++;
 				andGates.add(g);
 			}
 			res.addAll(andGates);
 			numberOfNonXORGatesAdded += andGates.size();
-			numberOfNonOutputGatesAdded += andGates.size();
 			andGates.clear();
 		}
-//		for(Gate g: andGates){
+//		int count = 0;
+//		for(Gate g: res){
 //			System.out.println(g);
-//			if(andGates.indexOf(g) > 512){
+//			if (count > 512){
 //				return null;
 //			}
+//			count++;
 //		}
-
-
+		
 
 		/**
 		 * Add all the XOR gates.
@@ -100,7 +96,6 @@ public class CircuitAugmentator implements Runnable {
 		
 		for (int s = uptoAndIncludingFirstAugInput; s <totalInputSize; s++){
 			int multCounter = s - uptoAndIncludingFirstAugInput;
-			
 			int priorOutputWire = 0;
 			int numberOfXORs = (t_a - 1);
 			for (int i = 0; i < numberOfXORs; i++){
@@ -129,18 +124,46 @@ public class CircuitAugmentator implements Runnable {
 			Gate xorOutputGate = xorGates.get(xorGates.size() - 1);
 			int xorOutputWireIndex = xorOutputGate.getOutputWireIndex();
 
-
 			Gate outputGate = new GateAugment("2 1 " + xorOutputWireIndex +" " +
-					s + " " + numberOfGates++ + " 0110");
-
-			numberOfNonOutputGatesAdded += xorGates.size(); 
+					s + " " + multCounter + " 0110");
+			
+			outputGates.add(outputGate);
 			res.addAll(xorGates);
 			xorGates.clear();
-			res.add(outputGate);
 		}
 
 		return res;
 
+	}
+	
+	private List<Gate> getIncrementedGates(List<Gate> parsedGates, 
+			int numberOfInputs){
+		List<Gate> res = new ArrayList<Gate>();
+		int numberOfAddedGates = parsedGates.size();
+		
+		for(Gate g: parsedGates){
+			if(!g.isXOR()){
+				g.setGateNumber(g.getGateNumber() + numberOfNonXORGatesAdded);
+			}
+			if(g.getLeftWireIndex() > numberOfInputs - 1){
+				int newIndex = g.getLeftWireIndex() + numberOfAddedGates;
+				g.setLeftWireIndex(newIndex);
+				if(g.getLeftWireIndex() < 20000){
+					System.out.println(g);
+				}
+			}
+			if(g.getRightWireIndex() > numberOfInputs - 1){
+				int newIndex = g.getRightWireIndex() + numberOfAddedGates;
+				g.setRightWireIndex(newIndex);
+			}
+			if(g.getOutputWireIndex() > numberOfInputs - 1){
+				int newIndex = g.getOutputWireIndex() + numberOfAddedGates;
+				g.setOutputWireIndex(newIndex);
+			}
+			largestOutputGate = Math.max(largestOutputGate, g.getOutputWireIndex());
+			res.add(g);
+		}
+		return res;
 	}
 
 	/**
@@ -160,12 +183,7 @@ public class CircuitAugmentator implements Runnable {
 			fbw.newLine();
 			fbw.newLine();
 
-			/*
-			 * Write the gates the the file, one layer at a time
-			 */
 			for(Gate g: augCircuit){
-
-				// Write the gates in this layer
 				fbw.write(g.toString());
 				fbw.newLine();
 			}
@@ -179,6 +197,15 @@ public class CircuitAugmentator implements Runnable {
 				e.printStackTrace();
 			}
 		}
+	}
+	
+	private List<Gate> getOutputGates(){
+		int startIndex = largestOutputGate + 1;
+		for(Gate g: outputGates){
+			g.setOutputWireIndex(startIndex);
+			startIndex++;
+		}
+		return outputGates;
 	}
 }
 
