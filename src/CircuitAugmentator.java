@@ -33,12 +33,11 @@ public class CircuitAugmentator implements Runnable {
 		List<Gate> augGates = 
 				getAugGates(numberOfInputs);
 		
-		
 		List<Gate> augCircuit = new ArrayList<Gate>();
 		List<Gate> incrementedGates = getIncrementedGates(parsedGates, numberOfInputs);
+		List<Gate> augOutputGates = getOutputGates();//Must be called after getIncrementedGates()
 		augCircuit.addAll(augGates);
 		augCircuit.addAll(incrementedGates);
-		List<Gate> augOutputGates = getOutputGates();
 		augCircuit.addAll(augOutputGates);
 		
 		writeOutput(augCircuit);
@@ -52,7 +51,6 @@ public class CircuitAugmentator implements Runnable {
 		int gateNumber = 0;
 		int uptoAndIncludingFirstAugInput = totalInputSize - t_a;
 		List<Gate> andGates = new ArrayList<Gate>();
-
 
 		/**
 		 * Add all the AND gates. We assume r is the 3rd input
@@ -78,26 +76,18 @@ public class CircuitAugmentator implements Runnable {
 			numberOfNonXORGatesAdded += andGates.size();
 			andGates.clear();
 		}
-//		int count = 0;
-//		for(Gate g: res){
-//			System.out.println(g);
-//			if (count > 512){
-//				return null;
-//			}
-//			count++;
-//		}
-		
 
 		/**
 		 * Add all the XOR gates.
 		 */
 		List<Gate> xorGates = new ArrayList<Gate>();
+		//How far we filled up the res array with and gates
 		int xorGateStart = res.size() + totalInputSize;
 		
-		for (int s = uptoAndIncludingFirstAugInput; s <totalInputSize; s++){
+		for (int s = uptoAndIncludingFirstAugInput; s < totalInputSize; s++){
 			int multCounter = s - uptoAndIncludingFirstAugInput;
 			int priorOutputWire = 0;
-			int numberOfXORs = (t_a - 1);
+			int numberOfXORs = t_a - 1;
 			for (int i = 0; i < numberOfXORs; i++){
 				int leftWire;
 				int rightWire;
@@ -114,13 +104,16 @@ public class CircuitAugmentator implements Runnable {
 				priorOutputWire = outputWire;
 
 				// We make each xor dependant on the following xor, thus
-				// creating a tree structure. The last gate in this list is the
+				// creating a chain structure. The last gate in this list is the
 				// output gate.
 				Gate g = new GateAugment("2 1 " + leftWire + " " +
 						rightWire + " " + outputWire + " 0110");
 				xorGates.add(g);
 			}
 
+			//We identify the last xor-gate of the chain and xor this
+			//with the current s bit. The output of this xor is the s'th
+			//output bit of the augmentation output.
 			Gate xorOutputGate = xorGates.get(xorGates.size() - 1);
 			int xorOutputWireIndex = xorOutputGate.getOutputWireIndex();
 
@@ -148,9 +141,6 @@ public class CircuitAugmentator implements Runnable {
 			if(g.getLeftWireIndex() > numberOfInputs - 1){
 				int newIndex = g.getLeftWireIndex() + numberOfAddedGates;
 				g.setLeftWireIndex(newIndex);
-				if(g.getLeftWireIndex() < 20000){
-					System.out.println(g);
-				}
 			}
 			if(g.getRightWireIndex() > numberOfInputs - 1){
 				int newIndex = g.getRightWireIndex() + numberOfAddedGates;
