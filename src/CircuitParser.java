@@ -14,9 +14,9 @@ public class CircuitParser {
 	private Charset charset;
 	private int numberOfNonXORGates;
 	private int totalNumberOfInputs;
+	private int numberOfAliceInputs;
 	private String firstHeader;
 	private String secondHeader;
-	private int totalNumberOfGates;
 
 	public CircuitParser(File circuitFile, Charset charset){
 		this.circuitFile = circuitFile;
@@ -54,7 +54,7 @@ public class CircuitParser {
 				if (counter == true){
 					secondHeader = line;
 					String[] split = line.split(" ");
-					int numberOfAliceInputs = Integer.parseInt(split[0]);
+					numberOfAliceInputs = Integer.parseInt(split[0]);
 					int numberOfBobInputs = Integer.parseInt(split[1]);
 					totalNumberOfInputs = numberOfAliceInputs +
 							numberOfBobInputs;
@@ -80,7 +80,39 @@ public class CircuitParser {
 		return res;
 	}
 	
+	public String[] getHeaders(int sizeOfCircuit, int nonXORGatesAdded){
+		String[] res = new String[2];
+		
+		String[] split = firstHeader.split(" ");
+		int numberOfNonXORGates = Integer.parseInt(split[1]);
+		int totalNumberOfNonXORGates = numberOfNonXORGates+ nonXORGatesAdded;
+		
+		res[0] = sizeOfCircuit + " " +  totalNumberOfNonXORGates;
+		
+		String[] inputOutputInfo = secondHeader.split(" ");
+		int newAliceInput = Integer.parseInt(inputOutputInfo[0]) *2;
+		int newBobInput = Integer.parseInt(inputOutputInfo[1]) *2;
+		int newOutput = Integer.parseInt(inputOutputInfo[1]) *2;
+		
+		res[1] = newAliceInput + " " + newBobInput + " " + inputOutputInfo[4] + " " +
+		newOutput;
+		
+		return res;
+		
+	}
+	
+	
 	public int getNumberOfInputs(){
 		return totalNumberOfInputs;
 	}
+	
+	public int getNumberOfAliceInputs(){
+		return numberOfAliceInputs;
+	}
+	
+	public int getNumberOfNonXORGates(){
+		String[] split = firstHeader.split(" ");
+		return Integer.parseInt(split[1]);
+	}
+
 }

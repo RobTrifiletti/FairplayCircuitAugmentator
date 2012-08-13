@@ -10,6 +10,8 @@ public class GateAugment implements Gate {
 	private int outputWireIndex;
 	private String gate;
 	private int gateNumber;
+	private int inputWires;
+	private int outputWires;
 
 	public GateAugment(String s){
 
@@ -17,6 +19,8 @@ public class GateAugment implements Gate {
 		String[] split = s.split(" ");
 		counter = numberOfInputWires;
 		time = -1;
+		inputWires = Integer.parseInt(split[0]);
+		outputWires = Integer.parseInt(split[1]);
 		leftWireIndex = Integer.parseInt(split[2]);
 		rightWireIndex = Integer.parseInt(split[3]);
 		outputWireIndex = Integer.parseInt(split[4]);
@@ -94,7 +98,7 @@ public class GateAugment implements Gate {
 	 */
 	@Override
 	public String toString(){
-		return getGateNumber() + " " + getLeftWireIndex() + " " + getRightWireIndex() +
+		return inputWires + " " +  outputWires + " " + getLeftWireIndex() + " " + getRightWireIndex() +
 				" " + getOutputWireIndex() + " " + getGate();
 	}
 
@@ -123,5 +127,22 @@ public class GateAugment implements Gate {
 	@Override
 	public int getGateNumber(){
 		return gateNumber;
+	}
+
+	@Override
+	public void setLeftWireIndex(int index) {
+		leftWireIndex = index;
+		
+	}
+
+	@Override
+	public void setRightWireIndex(int index) {
+		rightWireIndex = index;
+	}
+
+	@Override
+	public void setOutputWireIndex(int index) {
+		outputWireIndex = index;
+		
 	}
 }
