@@ -32,14 +32,15 @@ public class CircuitAugmentator implements Runnable {
 		int numberOfInputs = circuitParser.getNumberOfInputs(); //256
 		List<Gate> augGates = 
 				getAugGates(numberOfInputs);
-		
 		List<Gate> augCircuit = new ArrayList<Gate>();
-		List<Gate> incrementedGates = getIncrementedGates(parsedGates, numberOfInputs);
+
+		List<Gate> incrementedGates = 
+				getIncrementedGates(parsedGates, augGates.size(), numberOfInputs);
 		List<Gate> augOutputGates = getOutputGates();//Must be called after getIncrementedGates()
 		augCircuit.addAll(augGates);
 		augCircuit.addAll(incrementedGates);
 		augCircuit.addAll(augOutputGates);
-		
+
 		writeOutput(augCircuit);
 	}
 
@@ -83,7 +84,7 @@ public class CircuitAugmentator implements Runnable {
 		List<Gate> xorGates = new ArrayList<Gate>();
 		//How far we filled up the res array with and gates
 		int xorGateStart = res.size() + totalInputSize;
-		
+
 		for (int s = uptoAndIncludingFirstAugInput; s < totalInputSize; s++){
 			int multCounter = s - uptoAndIncludingFirstAugInput;
 			int priorOutputWire = 0;
@@ -119,7 +120,7 @@ public class CircuitAugmentator implements Runnable {
 
 			Gate outputGate = new GateAugment("2 1 " + xorOutputWireIndex +" " +
 					s + " " + multCounter + " 0110");
-			
+
 			outputGates.add(outputGate);
 			res.addAll(xorGates);
 			xorGates.clear();
@@ -128,28 +129,26 @@ public class CircuitAugmentator implements Runnable {
 		return res;
 
 	}
-	
+
 	private List<Gate> getIncrementedGates(List<Gate> parsedGates, 
-			int numberOfInputs){
+			int numberOfAddedGates, int numberOfInputs){
 		List<Gate> res = new ArrayList<Gate>();
-		int numberOfAddedGates = parsedGates.size();
-		
+		int incNumber = numberOfAddedGates + numberOfInputs;
 		for(Gate g: parsedGates){
 			if(!g.isXOR()){
 				g.setGateNumber(g.getGateNumber() + numberOfNonXORGatesAdded);
 			}
 			if(g.getLeftWireIndex() > numberOfInputs - 1){
-				int newIndex = g.getLeftWireIndex() + numberOfAddedGates;
+				int newIndex = g.getLeftWireIndex() + incNumber;
 				g.setLeftWireIndex(newIndex);
 			}
 			if(g.getRightWireIndex() > numberOfInputs - 1){
-				int newIndex = g.getRightWireIndex() + numberOfAddedGates;
+				int newIndex = g.getRightWireIndex() + incNumber;
 				g.setRightWireIndex(newIndex);
 			}
-			if(g.getOutputWireIndex() > numberOfInputs - 1){
-				int newIndex = g.getOutputWireIndex() + numberOfAddedGates;
-				g.setOutputWireIndex(newIndex);
-			}
+			//Outputwires should always be incremented
+			int newIndex = g.getOutputWireIndex() + incNumber;
+			g.setOutputWireIndex(newIndex);
 			largestOutputGate = Math.max(largestOutputGate, g.getOutputWireIndex());
 			res.add(g);
 		}
@@ -188,7 +187,7 @@ public class CircuitAugmentator implements Runnable {
 			}
 		}
 	}
-	
+
 	private List<Gate> getOutputGates(){
 		int startIndex = largestOutputGate + 1;
 		for(Gate g: outputGates){
