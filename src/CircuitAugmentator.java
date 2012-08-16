@@ -133,7 +133,7 @@ public class CircuitAugmentator implements Runnable {
 	private List<Gate> getIncrementedGates(List<Gate> parsedGates, 
 			int numberOfAddedGates, int numberOfInputs){
 		List<Gate> res = new ArrayList<Gate>();
-		int incNumber = numberOfAddedGates + numberOfInputs -1;
+		int incNumber = numberOfAddedGates + numberOfInputs;
 		int numberOfAliceInputs = numberOfInputs/2;
 		for(Gate g: parsedGates){
 			int leftWireIndex = g.getLeftWireIndex();
