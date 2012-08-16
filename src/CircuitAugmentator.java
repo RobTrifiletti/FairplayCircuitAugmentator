@@ -50,22 +50,22 @@ public class CircuitAugmentator implements Runnable {
 		int t_a = circuitParser.getNumberOfAliceInputs();
 		int totalInputSize = numberOfStandardInputs * 2;
 		int gateNumber = 0;
-		int uptoAndIncludingFirstAugInput = totalInputSize - t_a;
+		int r = totalInputSize - t_a;
 		List<Gate> andGates = new ArrayList<Gate>();
 
 		/**
 		 * Add all the AND gates. We assume r is the 3rd input
 		 */
-		for(int s = uptoAndIncludingFirstAugInput; s < totalInputSize; s++){
-			for(int i = 0; i < t_a; i++){
-				int shift = s - uptoAndIncludingFirstAugInput;
-				int leftWire = i;
-				int rightWire = (shift + i + numberOfStandardInputs) % 
-						uptoAndIncludingFirstAugInput;
+		for(int s = t_a; s < numberOfStandardInputs; s++){
+			for(int x = 0; x < t_a; x++){
+				int shift = s - t_a;
+				int leftWire = x;
+				int rightWire = (shift + x + r) % 
+						totalInputSize;
 				if (rightWire < numberOfStandardInputs){
-					rightWire += numberOfStandardInputs;
+					rightWire += r;
 				}
-				int outputWire = shift * t_a + (i + totalInputSize);
+				int outputWire = shift * t_a + (x + totalInputSize);
 
 				Gate g = new GateAugment("2 1 "+ leftWire + " " + rightWire +
 						" " + outputWire + " 0001");
@@ -85,8 +85,8 @@ public class CircuitAugmentator implements Runnable {
 		//How far we filled up the res array with and gates
 		int xorGateStart = res.size() + totalInputSize;
 
-		for (int s = uptoAndIncludingFirstAugInput; s < totalInputSize; s++){
-			int multCounter = s - uptoAndIncludingFirstAugInput;
+		for (int s = t_a; s < numberOfStandardInputs; s++){
+			int multCounter = s - t_a;
 			int priorOutputWire = 0;
 			int numberOfXORs = t_a - 1;
 			for (int i = 0; i < numberOfXORs; i++){
@@ -101,7 +101,7 @@ public class CircuitAugmentator implements Runnable {
 					rightWire = totalInputSize + t_a * multCounter + 1 + i;
 				}
 				int outputWire = xorGateStart + i + 
-						(s - uptoAndIncludingFirstAugInput) * numberOfXORs;
+						(s - t_a) * numberOfXORs;
 				priorOutputWire = outputWire;
 
 				// We make each xor dependant on the following xor, thus
@@ -134,18 +134,35 @@ public class CircuitAugmentator implements Runnable {
 			int numberOfAddedGates, int numberOfInputs){
 		List<Gate> res = new ArrayList<Gate>();
 		int incNumber = numberOfAddedGates + numberOfInputs -1;
+		int numberOfAliceInputs = numberOfInputs/2;
 		for(Gate g: parsedGates){
+			int leftWireIndex = g.getLeftWireIndex();
+			int rightWireIndex = g.getRightWireIndex();
 			if(!g.isXOR()){
 				g.setGateNumber(g.getGateNumber() + numberOfNonXORGatesAdded);
 			}
-			if(g.getLeftWireIndex() > numberOfInputs - 1){
-				int newIndex = g.getLeftWireIndex() + incNumber;
+			
+			//If input is t_b, increment it
+			if(leftWireIndex < numberOfInputs &&
+					leftWireIndex > numberOfAliceInputs){
+				g.setLeftWireIndex(leftWireIndex + numberOfAliceInputs);
+			}
+			if(rightWireIndex < numberOfInputs &&
+					rightWireIndex > numberOfAliceInputs){
+				g.setRightWireIndex(rightWireIndex + numberOfAliceInputs);
+			}
+					
+			// Increment wires with new gate size
+			if(leftWireIndex > numberOfInputs - 1){
+				int newIndex = leftWireIndex + incNumber;
 				g.setLeftWireIndex(newIndex);
 			}
-			if(g.getRightWireIndex() > numberOfInputs - 1){
-				int newIndex = g.getRightWireIndex() + incNumber;
+			if(rightWireIndex > numberOfInputs - 1){
+				int newIndex = rightWireIndex + incNumber;
 				g.setRightWireIndex(newIndex);
 			}
+			
+			
 			//Outputwires should always be incremented
 			int newIndex = g.getOutputWireIndex() + incNumber;
 			g.setOutputWireIndex(newIndex);
