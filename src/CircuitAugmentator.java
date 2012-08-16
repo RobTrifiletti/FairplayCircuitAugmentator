@@ -100,7 +100,7 @@ public class CircuitAugmentator implements Runnable {
 					leftWire = priorOutputWire;
 					rightWire = totalInputSize + t_a * multCounter + 1 + i;
 				}
-				int outputWire = xorGateStart + 1 + i + 
+				int outputWire = xorGateStart + i + 
 						(s - uptoAndIncludingFirstAugInput) * numberOfXORs;
 				priorOutputWire = outputWire;
 
@@ -133,7 +133,7 @@ public class CircuitAugmentator implements Runnable {
 	private List<Gate> getIncrementedGates(List<Gate> parsedGates, 
 			int numberOfAddedGates, int numberOfInputs){
 		List<Gate> res = new ArrayList<Gate>();
-		int incNumber = numberOfAddedGates + numberOfInputs;
+		int incNumber = numberOfAddedGates + numberOfInputs -1;
 		for(Gate g: parsedGates){
 			if(!g.isXOR()){
 				g.setGateNumber(g.getGateNumber() + numberOfNonXORGatesAdded);
